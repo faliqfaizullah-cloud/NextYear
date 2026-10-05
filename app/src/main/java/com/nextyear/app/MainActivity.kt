@@ -30,7 +30,7 @@ class MainActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("nextyear", MODE_PRIVATE) }
     private val pick = 42
     private val camReq = 43
-    private var photoStamp = 0L
+    private var photoSig = ""
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
@@ -53,7 +53,7 @@ class MainActivity : Activity() {
         sheet.pos = mood.toFloat(); year.currentMood = mood
         today.moodColor = Pal.moods[mood]
         prefs.getString("caption", null)?.let { today.caption = it }
-        File(filesDir, "photo.jpg").takeIf { it.exists() }?.let { today.photo = BitmapFactory.decodeFile(it.path) }
+        loadPhotos(false)
 
         sheet.onColor = { today.moodColor = it }
         sheet.onMood = { i ->
@@ -67,7 +67,13 @@ class MainActivity : Activity() {
         today.onTile = { sheet.show() }
         today.onCard = { startActivityForResult(Intent(this, CameraActivity::class.java), camReq) }
         today.onCardLong = {
-            startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*" }, pick)
+            val opts = if (today.currentFile() != null) arrayOf("Pick from gallery", "Delete this photo") else arrayOf("Pick from gallery")
+            AlertDialog.Builder(this).setItems(opts) { _, i ->
+                if (i == 0) startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*" }, pick)
+                else {
+                    today.currentFile()?.delete(); Haptics.heavy(); loadPhotos(true)
+                }
+            }.show()
         }
         today.onCaption = {
             val et = EditText(this).apply { setText(today.caption); typeface = android.graphics.Typeface.MONOSPACE }
@@ -97,12 +103,19 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun reloadPhoto() {
-        val f = File(filesDir, "photo.jpg")
-        if (f.exists()) {
-            photoStamp = f.lastModified()
-            today.photo = BitmapFactory.decodeFile(f.path)
-        }
+    private fun photosDir() = File(filesDir, "photos").apply { mkdirs() }
+
+    private fun listPhotos(): List<File> {
+        val old = File(filesDir, "photo.jpg")
+        if (old.exists()) old.renameTo(File(photosDir(), "${old.lastModified()}.jpg"))
+        return (photosDir().listFiles { f -> f.name.endsWith(".jpg") } ?: emptyArray())
+            .sortedByDescending { it.name.removeSuffix(".jpg").toLongOrNull() ?: 0L }
+    }
+
+    private fun loadPhotos(keepIndex: Boolean) {
+        val list = listPhotos()
+        photoSig = list.joinToString { it.name }
+        today.setPhotos(list, keepIndex)
     }
 
     override fun onPause() {
@@ -112,8 +125,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        val pf = File(filesDir, "photo.jpg")
-        if (pf.exists() && pf.lastModified() != photoStamp) reloadPhoto()
+        if (listPhotos().joinToString { it.name } != photoSig) loadPhotos(false)
         val ids = AppWidgetManager.getInstance(this).getAppWidgetIds(ComponentName(this, ClockWidget::class.java))
         if (ids.isNotEmpty()) {
             ClockWidget.updateAll(this); ClockWidget.schedule(this)
@@ -139,14 +151,14 @@ class MainActivity : Activity() {
 
     override fun onActivityResult(req: Int, res: Int, data: Intent?) {
         super.onActivityResult(req, res, data)
-        if (req == camReq) { if (res == RESULT_OK) reloadPhoto(); return }
+        if (req == camReq) { if (res == RESULT_OK) loadPhotos(false); return }
         val uri = data?.data ?: return
         if (req != pick || res != RESULT_OK) return
         try {
             val o = BitmapFactory.Options().apply { inSampleSize = 2 }
             val bmp: Bitmap = contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, o) } ?: return
-            File(filesDir, "photo.jpg").outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 90, it) }
-            today.photo = bmp; Haptics.heavy()
+            File(photosDir(), "${System.currentTimeMillis()}.jpg").outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+            Haptics.heavy(); loadPhotos(false)
         } catch (_: Exception) { }
     }
 

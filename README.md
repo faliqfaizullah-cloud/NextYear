@@ -16,3 +16,7 @@ Flow: viewfinder (close, flash, 1x/2x, scribble shutter, flip) -> review card (X
 ## More widgets
 Year of growth (4x4), Day (2x2: #day, mood flower, weekday, date), Camera (1x1). All 28dp, borderless.
 Add them from the clock+ button in the app (bottom right) or the launcher widget list.
+
+## Photo pile
+Every kept photo is saved to filesDir/photos. On Today they form a stack (newest on top): swipe left/right to browse,
+tap the stack to take another, long-press for gallery / delete.

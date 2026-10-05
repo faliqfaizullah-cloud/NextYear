@@ -280,7 +280,8 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener, CameraUi.
 
     override fun onConfirm() {
         try {
-            File(filesDir, "pending.jpg").copyTo(File(filesDir, "photo.jpg"), overwrite = true)
+            val dir = File(filesDir, "photos").apply { mkdirs() }
+            File(filesDir, "pending.jpg").copyTo(File(dir, "${System.currentTimeMillis()}.jpg"), overwrite = true)
         } catch (e: Exception) { }
         Haptics.heavy()
         WidgetUtil.refreshAll(this)
