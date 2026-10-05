@@ -1,7 +1,5 @@
 name: Build APK
 on: [push, workflow_dispatch]
-permissions:
-  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,9 +10,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: 8.7 }
       - run: gradle assembleDebug --no-daemon
-      - run: cp app/build/outputs/apk/debug/app-debug.apk NextYear.apk
-      - uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@v4
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: NextYear v1.0.${{ github.run_number }}
-          files: NextYear.apk
+          name: NextYear-debug
+          path: app/build/outputs/apk/debug/app-debug.apk

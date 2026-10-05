@@ -8,3 +8,11 @@ Local: `gradle assembleDebug` (Gradle 8.7, JDK 17, Android SDK 34).
 "NextYear Clock": 3x2, borderless, 28dp corners, digits made of tiny hand-drawn plants.
 Add it with the clock+ button (bottom right of the app) or long-press home screen > Widgets.
 Ticks every minute; allow "Alarms & reminders" for NextYear on Android 12+ for on-the-minute updates.
+
+## Camera
+Tap the photo card on Today to open the camera (long-press to pick from gallery).
+Flow: viewfinder (close, flash, 1x/2x, scribble shutter, flip) -> review card (X retake, check keep).
+
+## More widgets
+Year of growth (4x4), Day (2x2: #day, mood flower, weekday, date), Camera (1x1). All 28dp, borderless.
+Add them from the clock+ button in the app (bottom right) or the launcher widget list.

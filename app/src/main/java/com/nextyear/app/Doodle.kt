@@ -59,7 +59,7 @@ object Doodle {
 
     /** Small doodles (types 0..5) that fit inside a box of +-s. */
     fun mini(c: Canvas, type: Int, cx: Float, cy: Float, s: Float, p: Paint) {
-        when (type) {
+        when (type % 14) {
             0 -> { // flower
                 for (i in 0 until 6) {
                     c.save(); c.rotate(i * 60f, cx, cy - s * 0.3f)
@@ -103,11 +103,94 @@ object Doodle {
                 c.drawLine(cx, cy + s * 0.25f, cx, cy + s, p)
                 c.drawLine(cx, cy + s * 0.6f, cx + s * 0.3f, cy + s * 0.35f, p)
             }
+            6 -> { // grass
+                c.drawLine(cx, cy + s, cx, cy - s * 0.9f, p)
+                c.drawLine(cx - s * 0.45f, cy + s, cx - s * 0.7f, cy - s * 0.3f, p)
+                c.drawLine(cx + s * 0.45f, cy + s, cx + s * 0.7f, cy - s * 0.3f, p)
+            }
+            7 -> { // cactus
+                c.drawRoundRect(RectF(cx - s * 0.28f, cy - s * 0.9f, cx + s * 0.28f, cy + s), s * 0.28f, s * 0.28f, p)
+                c.drawLine(cx - s * 0.28f, cy + s * 0.1f, cx - s * 0.7f, cy + s * 0.1f, p)
+                c.drawLine(cx - s * 0.7f, cy + s * 0.1f, cx - s * 0.7f, cy - s * 0.4f, p)
+                c.drawLine(cx + s * 0.28f, cy - s * 0.1f, cx + s * 0.7f, cy - s * 0.1f, p)
+                c.drawLine(cx + s * 0.7f, cy - s * 0.1f, cx + s * 0.7f, cy - s * 0.6f, p)
+            }
+            8 -> { // leaf
+                val q = Path().apply {
+                    moveTo(cx, cy + s); quadTo(cx - s * 0.9f, cy, cx, cy - s)
+                    quadTo(cx + s * 0.9f, cy, cx, cy + s); close()
+                }
+                c.drawPath(q, p)
+                c.drawLine(cx, cy + s, cx, cy - s * 0.4f, p)
+            }
+            9 -> { // spiral flower
+                c.drawCircle(cx, cy - s * 0.2f, s * 0.7f, p)
+                c.drawCircle(cx, cy - s * 0.2f, s * 0.35f, p)
+                c.drawLine(cx, cy + s * 0.5f, cx, cy + s, p)
+            }
+            10 -> { // pumpkin
+                c.drawOval(RectF(cx - s * 0.8f, cy - s * 0.4f, cx + s * 0.8f, cy + s * 0.7f), p)
+                c.drawLine(cx, cy - s * 0.4f, cx, cy - s * 0.8f, p)
+                c.drawLine(cx - s * 0.25f, cy - s * 0.3f, cx - s * 0.25f, cy + s * 0.6f, p)
+                c.drawLine(cx + s * 0.25f, cy - s * 0.3f, cx + s * 0.25f, cy + s * 0.6f, p)
+            }
+            11 -> { // carrot
+                c.drawLine(cx - s * 0.35f, cy - s * 0.3f, cx, cy + s, p)
+                c.drawLine(cx + s * 0.35f, cy - s * 0.3f, cx, cy + s, p)
+                c.drawLine(cx - s * 0.35f, cy - s * 0.3f, cx + s * 0.35f, cy - s * 0.3f, p)
+                c.drawLine(cx, cy - s * 0.3f, cx - s * 0.3f, cy - s * 0.95f, p)
+                c.drawLine(cx, cy - s * 0.3f, cx + s * 0.3f, cy - s * 0.95f, p)
+                c.drawLine(cx, cy - s * 0.3f, cx, cy - s, p)
+            }
+            12 -> { // sailboat
+                val q = Path().apply {
+                    moveTo(cx - s * 0.05f, cy - s * 0.9f); lineTo(cx - s * 0.05f, cy + s * 0.3f)
+                    lineTo(cx + s * 0.7f, cy + s * 0.3f); close()
+                }
+                c.drawPath(q, p)
+                c.drawLine(cx - s * 0.7f, cy + s * 0.5f, cx + s * 0.7f, cy + s * 0.5f, p)
+                c.drawLine(cx - s * 0.7f, cy + s * 0.5f, cx - s * 0.4f, cy + s * 0.85f, p)
+                c.drawLine(cx + s * 0.7f, cy + s * 0.5f, cx + s * 0.4f, cy + s * 0.85f, p)
+                c.drawLine(cx - s * 0.4f, cy + s * 0.85f, cx + s * 0.4f, cy + s * 0.85f, p)
+            }
+            13 -> { // bush
+                c.drawCircle(cx - s * 0.45f, cy + s * 0.2f, s * 0.45f, p)
+                c.drawCircle(cx + s * 0.45f, cy + s * 0.2f, s * 0.45f, p)
+                c.drawCircle(cx, cy - s * 0.25f, s * 0.5f, p)
+            }
             else -> { // apple
                 c.drawCircle(cx, cy + s * 0.15f, s * 0.6f, p)
                 c.drawLine(cx, cy - s * 0.45f, cx + s * 0.1f, cy - s * 0.8f, p)
                 c.drawOval(RectF(cx + s * 0.1f, cy - s * 0.95f, cx + s * 0.5f, cy - s * 0.65f), p)
             }
         }
+    }
+
+    /** Thick sunflower with a mood face (mood 0..4). Used by the Day widget. */
+    fun sunflower(c: Canvas, cx: Float, cy: Float, s: Float, p: Paint, mood: Int) {
+        val n = 12
+        for (i in 0 until n) {
+            c.save(); c.rotate(i * 360f / n, cx, cy)
+            c.drawOval(RectF(cx - s * 0.17f, cy - s * 1.32f, cx + s * 0.17f, cy - s * 0.82f), p)
+            c.restore()
+        }
+        c.drawOval(RectF(cx - s * 0.82f, cy - s * 0.74f, cx + s * 0.82f, cy + s * 0.74f), p)
+        val f = Paint(p).apply { style = Paint.Style.FILL }
+        c.drawLine(cx - s * 0.4f, cy - s * 0.22f, cx - s * 0.2f, cy - s * 0.22f, p)
+        c.drawLine(cx + s * 0.14f, cy - s * 0.22f, cx + s * 0.34f, cy - s * 0.22f, p)
+        when (mood) {
+            0 -> c.drawArc(RectF(cx - s * 0.28f, cy + s * 0.18f, cx + s * 0.28f, cy + s * 0.55f), 200f, 140f, false, p)
+            1 -> c.drawLine(cx - s * 0.22f, cy + s * 0.3f, cx + s * 0.22f, cy + s * 0.3f, p)
+            3 -> c.drawArc(RectF(cx - s * 0.3f, cy - s * 0.02f, cx + s * 0.3f, cy + s * 0.42f), 20f, 140f, false, p)
+            4 -> c.drawArc(RectF(cx - s * 0.32f, cy - s * 0.05f, cx + s * 0.32f, cy + s * 0.45f), 10f, 160f, true, f)
+            else -> c.drawOval(RectF(cx - s * 0.11f, cy + s * 0.08f, cx + s * 0.11f, cy + s * 0.4f), f)
+        }
+        c.drawLine(cx, cy + s * 0.74f, cx, cy + s * 2.35f, p)
+        c.save(); c.rotate(-25f, cx - s * 0.65f, cy + s * 1.55f)
+        c.drawOval(RectF(cx - s * 0.95f, cy + s * 1.4f, cx - s * 0.35f, cy + s * 1.7f), p)
+        c.restore()
+        c.save(); c.rotate(25f, cx + s * 0.6f, cy + s * 1.75f)
+        c.drawOval(RectF(cx + s * 0.3f, cy + s * 1.6f, cx + s * 0.9f, cy + s * 1.95f), p)
+        c.restore()
     }
 }

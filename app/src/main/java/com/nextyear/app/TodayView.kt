@@ -11,11 +11,13 @@ class TodayView(ctx: Context) : View(ctx) {
         set(v) { field = v; invalidate() }
     var photo: Bitmap? = null
         set(v) { field = v; invalidate() }
-    var caption = "A visual love letter to\nUtah walking trails \uD83C\uDF42"
+    var caption = ""
         set(v) { field = v; invalidate() }
     var onCard: (() -> Unit)? = null
     var onCaption: (() -> Unit)? = null
     var onTile: (() -> Unit)? = null
+    var onCardLong: (() -> Unit)? = null
+    private var downT = 0L
 
     private val mono = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = mono; color = Pal.INK }
@@ -49,8 +51,8 @@ class TodayView(ctx: Context) : View(ctx) {
         }
 
         // photo stack
-        val cx = w / 2; val cy = h * 0.37f
-        val cw = w * 0.56f; val ch = cw * 1.2f
+        val cx = w / 2; val cy = h * 0.355f
+        val cw = w * 0.42f; val ch = cw * 1.38f
         cardRect.set(cx - cw / 2, cy - ch / 2, cx + cw / 2, cy + ch / 2)
         fill.shader = null
         for ((rot, col) in listOf(-5f to 0xFFB08A5A.toInt(), 4f to 0xFFC9A877.toInt())) {
@@ -67,16 +69,32 @@ class TodayView(ctx: Context) : View(ctx) {
             val sw = cw / s; val sh = ch / s
             val sx = (b.width - sw) / 2; val sy = (b.height - sh) / 2
             c.drawBitmap(b, Rect(sx.toInt(), sy.toInt(), (sx + sw).toInt(), (sy + sh).toInt()), cardRect, null)
-        } else drawLandscape(c)
+        } else drawEmpty(c)
         c.restore()
 
         // caption
         text.textAlign = Paint.Align.LEFT; text.textSize = 17 * d
-        var y = cardRect.bottom + 64 * d
+        var y = cardRect.bottom + 0.1f * h
         val x0 = w * 0.1f
-        val lines = caption.split("\n")
+        val blank = caption.isBlank()
+        text.color = if (blank) 0xFF9C95E6.toInt() else Pal.INK
+        val lines = (if (blank) "Start writing" else caption).split("\n")
         capRect.set(x0, y - 22 * d, w - x0, y + lines.size * 24 * d)
         for (ln in lines) { c.drawText(ln, x0, y, text); y += 24 * d }
+        text.color = Pal.INK
+    }
+
+    private fun drawEmpty(c: Canvas) {
+        fill.shader = null; fill.color = 0xFFC9C6E8.toInt(); fill.alpha = 255
+        c.drawRect(cardRect, fill)
+        val p = Doodle.pen(Pal.INK, 2.4f * d)
+        val cx = cardRect.centerX(); val cy = cardRect.centerY()
+        val r = RectF(cx - 18 * d, cy - 12 * d, cx + 18 * d, cy + 14 * d)
+        c.drawRoundRect(r, 6 * d, 6 * d, p)
+        c.drawCircle(cx, cy + 1 * d, 7 * d, p)
+        c.drawLine(cx - 7 * d, cy - 12 * d, cx - 4 * d, cy - 17 * d, p)
+        c.drawLine(cx - 4 * d, cy - 17 * d, cx + 4 * d, cy - 17 * d, p)
+        c.drawLine(cx + 4 * d, cy - 17 * d, cx + 7 * d, cy - 12 * d, p)
     }
 
     private fun drawLandscape(c: Canvas) {
@@ -100,12 +118,15 @@ class TodayView(ctx: Context) : View(ctx) {
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        if (e.action == MotionEvent.ACTION_DOWN) return true
+        if (e.action == MotionEvent.ACTION_DOWN) { downT = e.eventTime; return true }
         if (e.action == MotionEvent.ACTION_UP) {
             when {
                 tileRect.contains(e.x, e.y) -> { Haptics.soft(); onTile?.invoke() }
                 capRect.contains(e.x, e.y) -> { Haptics.tick(); onCaption?.invoke() }
-                cardRect.contains(e.x, e.y) -> { Haptics.soft(); onCard?.invoke() }
+                cardRect.contains(e.x, e.y) -> {
+                    if (e.eventTime - downT > 500) { Haptics.click(); onCardLong?.invoke() }
+                    else { Haptics.soft(); onCard?.invoke() }
+                }
             }
         }
         return true

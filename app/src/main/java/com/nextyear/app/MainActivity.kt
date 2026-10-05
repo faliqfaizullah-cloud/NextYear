@@ -29,6 +29,8 @@ class MainActivity : Activity() {
     private lateinit var addBtn: AddWidgetButton
     private val prefs by lazy { getSharedPreferences("nextyear", MODE_PRIVATE) }
     private val pick = 42
+    private val camReq = 43
+    private var photoStamp = 0L
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
@@ -63,7 +65,8 @@ class MainActivity : Activity() {
             sheet.pos = 2f; year.currentMood = 2; year.invalidate()
         }
         today.onTile = { sheet.show() }
-        today.onCard = {
+        today.onCard = { startActivityForResult(Intent(this, CameraActivity::class.java), camReq) }
+        today.onCardLong = {
             startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*" }, pick)
         }
         today.onCaption = {
@@ -79,16 +82,38 @@ class MainActivity : Activity() {
     }
 
     private fun addWidget() {
+        val names = arrayOf("Clock  3x2", "Year of growth  4x4", "Day  2x2", "Camera  1x1")
+        val classes = arrayOf<Class<*>>(ClockWidget::class.java, YearWidget::class.java, DayWidget::class.java, CameraWidget::class.java)
+        AlertDialog.Builder(this).setTitle("Add widget")
+            .setItems(names) { _, i -> pinWidget(classes[i]) }.show()
+    }
+
+    private fun pinWidget(cls: Class<*>) {
         val mgr = AppWidgetManager.getInstance(this)
         if (Build.VERSION.SDK_INT >= 26 && mgr.isRequestPinAppWidgetSupported) {
-            mgr.requestPinAppWidget(ComponentName(this, ClockWidget::class.java), null, null)
+            mgr.requestPinAppWidget(ComponentName(this, cls), null, null)
         } else {
             Toast.makeText(this, "Long-press your home screen > Widgets > NextYear", Toast.LENGTH_LONG).show()
         }
     }
 
+    private fun reloadPhoto() {
+        val f = File(filesDir, "photo.jpg")
+        if (f.exists()) {
+            photoStamp = f.lastModified()
+            today.photo = BitmapFactory.decodeFile(f.path)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        WidgetUtil.refreshAll(this)
+    }
+
     override fun onResume() {
         super.onResume()
+        val pf = File(filesDir, "photo.jpg")
+        if (pf.exists() && pf.lastModified() != photoStamp) reloadPhoto()
         val ids = AppWidgetManager.getInstance(this).getAppWidgetIds(ComponentName(this, ClockWidget::class.java))
         if (ids.isNotEmpty()) {
             ClockWidget.updateAll(this); ClockWidget.schedule(this)
@@ -114,6 +139,7 @@ class MainActivity : Activity() {
 
     override fun onActivityResult(req: Int, res: Int, data: Intent?) {
         super.onActivityResult(req, res, data)
+        if (req == camReq) { if (res == RESULT_OK) reloadPhoto(); return }
         val uri = data?.data ?: return
         if (req != pick || res != RESULT_OK) return
         try {
