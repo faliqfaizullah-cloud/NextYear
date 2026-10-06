@@ -76,7 +76,7 @@ class DayWidget : AppWidgetProvider() {
             val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -off) }
 
             val rv = RemoteViews(ctx.packageName, R.layout.widget_day)
-            rv.setImageViewBitmap(R.id.clock_img, DayRenderer.render(ctx, side, side, cal, off < MAX_BACK, off > 0))
+            rv.setImageViewBitmap(R.id.clock_img, DayRenderer.render(ctx, side, side, cal, (off < MAX_BACK), (off > 0)))
             rv.setOnClickPendingIntent(R.id.zone_prev, step(ctx, id, ACTION_PREV, 1))
             rv.setOnClickPendingIntent(R.id.zone_next, step(ctx, id, ACTION_NEXT, 2))
             val open = PendingIntent.getActivity(
