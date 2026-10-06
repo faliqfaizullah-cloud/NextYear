@@ -11,7 +11,16 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: 8.7 }
-      - run: gradle assembleDebug --no-daemon -Pvc=${{ github.run_number }}
+      - name: Build
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon --console=plain -Pvc=${{ github.run_number }} 2>&1 | tee build.log
+      - name: Show compile errors
+        if: failure()
+        run: |
+          echo "### Build errors" >> "$GITHUB_STEP_SUMMARY"
+          grep -E "^e: |error:|AAPT|Unresolved|What went wrong" -A2 build.log | head -60 >> "$GITHUB_STEP_SUMMARY" || true
+          grep -E "^e: " build.log | sed -E 's#file:///home/runner/work/[^/]+/[^/]+/##' | head -20 | while read -r l; do echo "::error::$l"; done
       - run: cp app/build/outputs/apk/debug/app-debug.apk NextYear.apk
       - uses: softprops/action-gh-release@v2
         with:
