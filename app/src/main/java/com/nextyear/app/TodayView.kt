@@ -26,6 +26,13 @@ class TodayView(ctx: Context) : View(ctx) {
     var onCardLong: (() -> Unit)? = null
     var onCaption: (() -> Unit)? = null
     var onTile: (() -> Unit)? = null
+    var onDay: ((Int) -> Unit)? = null   // -1 = earlier day, +1 = later day
+    var label = "Today"
+        set(v) { field = v; invalidate() }
+    var canGoNext = false
+        set(v) { field = v; invalidate() }
+    private val prevZone = RectF()
+    private val nextZone = RectF()
 
     // ---- photo pile (index 0 = newest) ----
     var photos: List<File> = emptyList()
@@ -87,7 +94,16 @@ class TodayView(ctx: Context) : View(ctx) {
         // label + icon strip
         text.textSize = 12 * d; text.textAlign = Paint.Align.CENTER
         val x = { i: Int -> 38 * d + i * 58 * d }
-        c.drawText("Today", x(selected), top, text)
+        c.drawText(label, x(selected), top, text)
+        val ap = Doodle.pen(Pal.INK, 2.1f * d)
+        val ay = top - 4 * d; val ax = 50 * d; val aw = 5 * d
+        val lx = x(selected) - ax; val rx = x(selected) + ax
+        prevZone.set(lx - 22 * d, ay - 22 * d, lx + 22 * d, ay + 22 * d)
+        c.drawLine(lx + aw, ay - aw, lx - aw, ay, ap); c.drawLine(lx - aw, ay, lx + aw, ay + aw, ap)
+        if (canGoNext) {
+            nextZone.set(rx - 22 * d, ay - 22 * d, rx + 22 * d, ay + 22 * d)
+            c.drawLine(rx - aw, ay - aw, rx + aw, ay, ap); c.drawLine(rx + aw, ay, rx - aw, ay + aw, ap)
+        } else nextZone.setEmpty()
         val types = intArrayOf(3, 2, 0, 1, 5)
         for (i in 0 until 5) {
             val cx = x(i); val cy = top + 40 * d
@@ -254,6 +270,8 @@ class TodayView(ctx: Context) : View(ctx) {
                     return true
                 }
                 when {
+                    prevZone.contains(e.x, e.y) -> { Haptics.tick(); onDay?.invoke(-1) }
+                    nextZone.contains(e.x, e.y) -> { Haptics.tick(); onDay?.invoke(1) }
                     tileRect.contains(e.x, e.y) -> { Haptics.soft(); onTile?.invoke() }
                     capRect.contains(e.x, e.y) -> { Haptics.tick(); onCaption?.invoke() }
                     cardRect.contains(e.x, e.y) -> {

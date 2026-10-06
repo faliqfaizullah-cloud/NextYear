@@ -66,15 +66,15 @@ object YearRenderer {
     }
 }
 
-/** 2x2 "today": #day-of-year, flower with a mood face, weekday and date. */
+/** One card of the day stack: #day-of-year, flower with that day's mood, weekday and date. */
 object DayRenderer {
-    fun render(ctx: Context, wDp: Float, hDp: Float): Bitmap {
-        val pn = WidgetUtil.panel(ctx, wDp, hDp, 0xFFDEDEE1.toInt())
+    fun render(ctx: Context, wDp: Float, hDp: Float, cal: Calendar = Calendar.getInstance()): Bitmap {
+        val pn = WidgetUtil.panel(ctx, wDp, hDp, 0)
         val c = pn.c; val w = pn.w; val h = pn.h
-        val now = Date()
-        val cal = Calendar.getInstance()
+        val now = cal.time
         val doy = cal.get(Calendar.DAY_OF_YEAR)
-        val m = WidgetUtil.mood(ctx, doy)
+        val sameYear = cal.get(Calendar.YEAR) == Calendar.getInstance().get(Calendar.YEAR)
+        val m = if (sameYear) WidgetUtil.mood(ctx, doy) else -1
 
         val side = min(w, h)
         val mono = Typeface.MONOSPACE

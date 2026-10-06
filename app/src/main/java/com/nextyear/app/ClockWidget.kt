@@ -52,11 +52,13 @@ class ClockWidget : AppWidgetProvider() {
             val land = ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             var w = (if (land) o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH) else o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)).toFloat()
             var h = (if (land) o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) else o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)).toFloat()
-            if (w <= 0f) w = 220f
-            if (h <= 0f) h = 146f
+            if (w < 60f || h < 60f) { w = 220f; h = 146f }
+            val aspect = (w / h).coerceIn(1.2f, 2.4f)
+            val cw = minOf(w, h * aspect); val ch = cw / aspect
 
             val rv = RemoteViews(ctx.packageName, R.layout.widget_clock)
-            rv.setImageViewBitmap(R.id.clock_img, ClockRenderer.render(ctx, w, h))
+            rv.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.widget_bg)
+            rv.setImageViewBitmap(R.id.clock_img, ClockRenderer.render(ctx, cw, ch))
             val open = PendingIntent.getActivity(
                 ctx, 0, Intent(ctx, MainActivity::class.java),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

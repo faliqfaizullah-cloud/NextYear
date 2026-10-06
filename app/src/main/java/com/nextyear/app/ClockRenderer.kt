@@ -25,10 +25,6 @@ object ClockRenderer {
         val c = Canvas(bmp)
         val w = bmp.width.toFloat(); val h = bmp.height.toFloat()
 
-        // 28dp rounded, borderless panel
-        val r = 28 * u
-        c.clipPath(Path().apply { addRoundRect(RectF(0f, 0f, w, h), r, r, Path.Direction.CW) })
-        c.drawColor(0xFFEEEEF2.toInt())
 
         // dotted paper grid
         val dotP = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x661A00C8 }

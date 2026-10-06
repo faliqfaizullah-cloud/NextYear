@@ -20,6 +20,10 @@ import android.view.WindowManager
 import android.widget.EditText
 import android.widget.FrameLayout
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import kotlin.math.roundToInt
 
 class MainActivity : Activity() {
     private lateinit var today: TodayView
@@ -31,6 +35,7 @@ class MainActivity : Activity() {
     private val pick = 42
     private val camReq = 43
     private var photoSig = ""
+    private var ago = 0 // 0 = today, 1 = yesterday ...
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
@@ -52,8 +57,7 @@ class MainActivity : Activity() {
         val mood = year.entries[year.today] ?: prefs.getInt("mood", 3)
         sheet.pos = mood.toFloat(); year.currentMood = mood
         today.moodColor = Pal.moods[mood]
-        prefs.getString("caption", null)?.let { today.caption = it }
-        loadPhotos(false)
+        setDay(0)
 
         sheet.onColor = { today.moodColor = it }
         sheet.onMood = { i ->
@@ -64,8 +68,9 @@ class MainActivity : Activity() {
             year.entries.remove(year.today); prefs.edit().remove("d${year.today}").apply()
             sheet.pos = 2f; year.currentMood = 2; year.invalidate()
         }
-        today.onTile = { sheet.show() }
-        today.onCard = { startActivityForResult(Intent(this, CameraActivity::class.java), camReq) }
+        today.onTile = { if (ago == 0) sheet.show() }
+        today.onDay = { dir -> setDay((ago - dir).coerceIn(0, 365)) }
+        today.onCard = { openCamera() }
         today.onCardLong = {
             val opts = if (today.currentFile() != null) arrayOf("Pick from gallery", "Delete this photo") else arrayOf("Pick from gallery")
             AlertDialog.Builder(this).setItems(opts) { _, i ->
@@ -77,14 +82,61 @@ class MainActivity : Activity() {
         }
         today.onCaption = {
             val et = EditText(this).apply { setText(today.caption); typeface = android.graphics.Typeface.MONOSPACE }
-            AlertDialog.Builder(this).setTitle("Today's note").setView(et)
+            AlertDialog.Builder(this).setTitle(today.label).setView(et)
                 .setPositiveButton("Save") { _, _ ->
-                    today.caption = et.text.toString(); prefs.edit().putString("caption", today.caption).apply(); Haptics.click()
+                    today.caption = et.text.toString(); prefs.edit().putString("cap" + dayKey(), today.caption).apply(); Haptics.click()
                 }.setNegativeButton("Cancel", null).show()
         }
         year.onEntry = { day, m -> prefs.edit().apply { if (m == null) remove("d$day") else putInt("d$day", m) }.apply() }
         pill.onSelect = { i -> switchPage(i) }
         addBtn.onTap = { addWidget() }
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(i: Intent) {
+        super.onNewIntent(i)
+        setIntent(i)
+        handleIntent(i)
+    }
+
+    /** Widget tap: today's card opens the camera, an older card opens that day. */
+    private fun handleIntent(i: Intent?) {
+        val n = i?.getIntExtra("daysAgo", -1) ?: -1
+        if (n < 0) return
+        i?.removeExtra("daysAgo")
+        switchPage(0)
+        setDay(n)
+        if (n == 0) openCamera()
+    }
+
+    private fun openCamera() {
+        if (ago != 0) {
+            Toast.makeText(this, "Moments are captured on the day itself", Toast.LENGTH_SHORT).show()
+            Haptics.tick(); return
+        }
+        startActivityForResult(Intent(this, CameraActivity::class.java), camReq)
+    }
+
+    private fun startOfDay(offset: Int): Long = Calendar.getInstance().apply {
+        add(Calendar.DAY_OF_YEAR, -offset)
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+
+    private fun dayKey() = SimpleDateFormat("yyyyMMdd", Locale.US).format(startOfDay(ago))
+
+    private fun setDay(n: Int) {
+        ago = n
+        today.label = when (n) { 0 -> "Today"; 1 -> "Yesterday"; else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(startOfDay(n)) }
+        today.canGoNext = n > 0
+        today.caption = prefs.getString("cap" + dayKey(), null) ?: (if (n == 0) prefs.getString("caption", "") else "") ?: ""
+        if (n == 0) today.moodColor = sheet.currentColor()
+        else {
+            val cal = Calendar.getInstance().apply { timeInMillis = startOfDay(n) }
+            val same = cal.get(Calendar.YEAR) == Calendar.getInstance().get(Calendar.YEAR)
+            val m = if (same) prefs.getInt("d" + cal.get(Calendar.DAY_OF_YEAR), -1) else -1
+            today.moodColor = if (m in 0..4) Pal.moods[m] else Pal.INK
+        }
+        loadPhotos(false)
     }
 
     private fun addWidget() {
@@ -106,9 +158,11 @@ class MainActivity : Activity() {
     private fun photosDir() = File(filesDir, "photos").apply { mkdirs() }
 
     private fun listPhotos(): List<File> {
+        val from = startOfDay(ago); val to = from + 24L * 3600 * 1000
         val old = File(filesDir, "photo.jpg")
         if (old.exists()) old.renameTo(File(photosDir(), "${old.lastModified()}.jpg"))
         return (photosDir().listFiles { f -> f.name.endsWith(".jpg") } ?: emptyArray())
+            .filter { (it.name.removeSuffix(".jpg").toLongOrNull() ?: 0L) in from until to }
             .sortedByDescending { it.name.removeSuffix(".jpg").toLongOrNull() ?: 0L }
     }
 
@@ -157,7 +211,8 @@ class MainActivity : Activity() {
         try {
             val o = BitmapFactory.Options().apply { inSampleSize = 2 }
             val bmp: Bitmap = contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, o) } ?: return
-            File(photosDir(), "${System.currentTimeMillis()}.jpg").outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+            val stamp = if (ago == 0) System.currentTimeMillis() else startOfDay(ago) + 12L * 3600 * 1000 + today.photos.size * 1000L
+            File(photosDir(), "$stamp.jpg").outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 90, it) }
             Haptics.heavy(); loadPhotos(false)
         } catch (_: Exception) { }
     }

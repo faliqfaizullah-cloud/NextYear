@@ -23,8 +23,7 @@ object WidgetUtil {
         val land = ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         var w = (if (land) o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH) else o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)).toFloat()
         var h = (if (land) o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) else o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)).toFloat()
-        if (w <= 0f) w = defW
-        if (h <= 0f) h = defH
+        if (w < 60f || h < 60f) { w = defW; h = defH } // launcher reported junk: use the design size
         return Pair(w, h)
     }
 
@@ -39,9 +38,7 @@ object WidgetUtil {
         }
         val bmp = Bitmap.createBitmap(wp.toInt().coerceAtLeast(2), hp.toInt().coerceAtLeast(2), Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
-        val r = 28 * u
-        c.clipPath(Path().apply { addRoundRect(RectF(0f, 0f, bmp.width.toFloat(), bmp.height.toFloat()), r, r, Path.Direction.CW) })
-        c.drawColor(color)
+        // the 28dp rounded panel is the layout background (exact size, never stretched)
         return Panel(bmp, c, u, bmp.width.toFloat(), bmp.height.toFloat())
     }
 
