@@ -27,7 +27,7 @@ object ClockRenderer {
 
 
         // dotted paper grid
-        val dotP = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x661A00C8 }
+        val dotP = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x551A00C8 }
         val step = 9 * u
         var yy = step / 2
         while (yy < h) { var xx = step / 2; while (xx < w) { c.drawCircle(xx, yy, 0.7f * u, dotP); xx += step }; yy += step }
@@ -50,12 +50,17 @@ object ClockRenderer {
         val cw = dw * 0.5f
         val dh = h - 2 * pad
         val t = minOf(dw * 0.36f, dh * 0.22f)
-        var x = pad + if (blankLead) (dw + g) / 2 else 0f
+        // center the whole time: 3 digits when the 12h hour has no leading zero, otherwise 4
+        val count = if (blankLead) 3 else 4
+        val total = count * dw + cw + count * g
+        var x = (w - total) / 2f
         val y = pad
 
         for (i in 0..1) {
-            if (!(i == 0 && blankLead)) fill(c, glyph(digits[i], x, y, dw, dh, t), 10 + digits[i] * 31 + i, u, pens)
-            x += dw + g
+            if (!(i == 0 && blankLead)) {
+                fill(c, glyph(digits[i], x, y, dw, dh, t), 10 + digits[i] * 31 + i, u, pens)
+                x += dw + g
+            }
         }
         val sq = t * 0.95f
         val cx = x + (cw - sq) / 2
