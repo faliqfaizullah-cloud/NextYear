@@ -68,7 +68,7 @@ object YearRenderer {
 
 /** One card of the day stack: #day-of-year, flower with that day's mood, weekday and date. */
 object DayRenderer {
-    fun render(ctx: Context, wDp: Float, hDp: Float, cal: Calendar = Calendar.getInstance()): Bitmap {
+    fun render(ctx: Context, wDp: Float, hDp: Float, cal: Calendar = Calendar.getInstance(), prev: Boolean = false, next: Boolean = false): Bitmap {
         val pn = WidgetUtil.panel(ctx, wDp, hDp, 0)
         val c = pn.c; val w = pn.w; val h = pn.h
         val now = cal.time
@@ -97,6 +97,11 @@ object DayRenderer {
         val col = if (m in 0..4) Pal.moods[m] else Pal.INK
         val s = side * 0.125f
         Doodle.sunflower(c, w * 0.49f, h * 0.40f, s, Doodle.pen(col, side * 0.026f), if (m in 0..4) m else 2)
+        // tap hints: older day on the left edge, back toward today on the right edge
+        val ap = Doodle.pen(LAVENDER, side * 0.014f)
+        val ay = h * 0.5f; val aw = side * 0.025f
+        if (prev) { val ax = w * 0.06f; c.drawLine(ax + aw, ay - aw * 1.5f, ax, ay, ap); c.drawLine(ax, ay, ax + aw, ay + aw * 1.5f, ap) }
+        if (next) { val ax = w * 0.94f; c.drawLine(ax - aw, ay - aw * 1.5f, ax, ay, ap); c.drawLine(ax, ay, ax - aw, ay + aw * 1.5f, ap) }
         return pn.bmp
     }
 }

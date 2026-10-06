@@ -21,7 +21,6 @@ Add them from the clock+ button in the app (bottom right) or the launcher widget
 Every kept photo is saved to filesDir/photos. On Today they form a stack (newest on top): swipe left/right to browse,
 tap the stack to take another, long-press for gallery / delete.
 
-## Day widget (swipe)
-2x2 stack: swipe up/down for today, yesterday, and 30 days back. Tap today's card -> camera; tap an older card -> opens that day.
-Photos and notes are stored per day. In the app, use the arrows beside the "Today" label to move between days.
-Widget panels use a 28dp layout background; content is drawn at its own aspect and centered, so it never stretches.
+## Day widget
+Clean 28dp card. Tap the left edge for an earlier day (up to 30 back), the right edge to move toward today,
+the middle to capture a moment (today) or open that day in the app. Starts on today again each new day.

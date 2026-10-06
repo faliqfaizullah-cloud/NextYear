@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
-    android:layout_width="match_parent" android:layout_height="match_parent">
-    <StackView
-        android:id="@+id/day_stack"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_bg_day">
+    <ImageView
+        android:id="@+id/clock_img"
         android:layout_width="match_parent" android:layout_height="match_parent"
-        android:loopViews="false" />
-    <FrameLayout
-        android:id="@+id/day_empty"
+        android:scaleType="fitCenter" />
+    <LinearLayout
         android:layout_width="match_parent" android:layout_height="match_parent"
-        android:background="@drawable/widget_bg_day" />
+        android:orientation="horizontal">
+        <FrameLayout android:id="@+id/zone_prev"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
+        <FrameLayout android:id="@+id/zone_open"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="2" />
+        <FrameLayout android:id="@+id/zone_next"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
+    </LinearLayout>
 </FrameLayout>
